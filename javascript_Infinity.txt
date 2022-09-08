@@ -1,0 +1,788 @@
+
+"use strict";
+
+var currentPlayer = 0;
+document.getElementById("currentPlayer").innerHTML = currentPlayer;
+
+var currentMode = "Placing";
+document.getElementById("currentMode").innerHTML = currentMode;
+
+var initialShipsToPlace = [1, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+var initShipsToPlace = initialShipsToPlace.slice();
+var ships = initialShipsToPlace.slice();
+
+var minDim = 5;
+var maxDim = 10;
+
+var sizeFrag = document.createDocumentFragment();
+var selectedDim;
+
+var currentShipSize = ships[0];
+var currentShipID = 0;
+var currentRound = 0;
+
+var currentShipDirection = "horizontal";
+
+var gameBoardP0Ids = [];
+var gameBoardP1Ids = [];
+var gameBoardSize;
+
+var gameBoardP0Shots = [];
+var gameBoardP1Shots = [];
+
+var shipsShotP0, shipsShotP1;
+shipsShotP0 = shipsShotP1 = [1, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+
+var currentIdOfShip = 0;
+
+var isPlacing = true;
+
+var selectSize = function() {
+  
+  selectedDim = this.id;
+  gameBoardSize = selectedDim;
+  
+  document.getElementById("gameShips").style.display = "inline-flex";
+
+  
+  document.getElementById("gameShipDirection").style.display = "inline-flex";
+
+  document.getElementById("currentDimension").innerHTML = selectedDim;
+  document.getElementById("currentDimension").style.display = "inline-flex";
+
+  var docFragNew0 = document.createDocumentFragment();
+
+  for (var i = 0; i < selectedDim; i++) {
+    var rowP0Shots = [];
+    var rowP1Shots = [];
+    var rowP0Ids = [];
+    var rowP1Ids = [];
+
+    for (var j = 0; j < selectedDim; j++) {
+      rowP0Shots[j] = -1;
+      rowP1Shots[j] = -1;
+      rowP0Ids[j] = -1;
+      rowP1Ids[j] = -1;
+    }
+
+    gameBoardP0Shots[i] = rowP0Shots;
+    gameBoardP1Shots[i] = rowP1Shots;
+    gameBoardP0Ids[i] = rowP0Ids;
+    gameBoardP1Ids[i] = rowP1Ids;
+  }
+
+  
+  var newDiv0 = document.createElement("div");
+  newDiv0.setAttribute("id", "containerP0");
+  docFragNew0 = setupGameBoard(docFragNew0);
+  newDiv0.appendChild(docFragNew0);
+  document
+    .getElementById("containerP0")
+    .parentNode.replaceChild(newDiv0, document.getElementById("containerP0"));
+  newDiv0.appendChild(docFragNew0);
+
+  
+  var newDiv1 = document.createElement("div");
+  newDiv1.setAttribute("id", "containerP1");
+  newDiv1.style.display = "none";
+  var docFragNew1 = document.createDocumentFragment();
+  docFragNew1 = setupGameBoard(docFragNew1);
+  newDiv1.appendChild(docFragNew1);
+  document
+    .getElementById("containerP1")
+    .parentNode.replaceChild(newDiv1, document.getElementById("containerP1"));
+  newDiv1.appendChild(docFragNew1);
+
+  
+  var bsDiv = document.getElementById("boardSizeSelectionDiv");
+  bsDiv.style.display = "none";
+};
+
+function updateDirection(selectObject) {
+  currentShipDirection = selectObject.value;
+  renderCurrentShip();
+}
+
+function selectShipSize(selectObject) {
+  currentShipSize = selectObject.target.value;
+  currentShipID = selectObject.target.id;
+}
+
+function renderCurrentShip() {
+  var shipFrag = document.createDocumentFragment();
+  var shipDiv = document.createElement("div");
+  shipDiv.setAttribute("class", "shipDiv");
+  shipDiv.setAttribute("id", "shipSelected");
+
+  var tbl = document.createElement("table");
+  tbl.setAttribute("border", "1");
+  tbl.setAttribute("class", "shipToSelect");
+
+  var noOfRows;
+  var noOfCols;
+
+  if (currentShipDirection === "horizontal") {
+    noOfRows = 1;
+    noOfCols = ships[currentShipID];
+  } else {
+    noOfRows = ships[currentShipID];
+    noOfCols = 1;
+  }
+
+  for (var row = 0; row < noOfRows; row++) {
+    var tr = document.createElement("tr");
+    for (var k = 0; k < noOfCols; k++) {
+      var td = document.createElement("td");
+      td.setAttribute("width", 10);
+      td.setAttribute("height", 10);
+      tr.appendChild(td);
+    }
+
+    tbl.appendChild(tr);
+  }
+
+  shipDiv.appendChild(tbl);
+  shipFrag.appendChild(shipDiv);
+
+  
+  var parentDiv = document.getElementById("gameShipDirection");
+  var shipSelect = document.getElementById("shipSelected");
+  parentDiv.replaceChild(shipFrag, shipSelect);
+}
+
+function updateShips(selectObject) {
+  selectShipSize(selectObject);
+  renderCurrentShip();
+}
+
+function cleanShips() {
+  var shipFrag = document.createDocumentFragment();
+
+  
+  var updatedShipsForm = document.createElement("form");
+  updatedShipsForm.setAttribute("class", "radiobuttons-container");
+  updatedShipsForm.setAttribute("id", "ships");
+  shipFrag.appendChild(updatedShipsForm);
+
+  document
+    .getElementById("ships")
+    .parentNode.replaceChild(shipFrag, document.getElementById("ships"));
+}
+
+function renderShips() {
+  
+
+  var shipFrag = document.createDocumentFragment();
+
+  
+  var updatedShipsForm = document.createElement("form");
+  updatedShipsForm.setAttribute("class", "radiobuttons-container");
+  updatedShipsForm.setAttribute("id", "ships");
+
+  for (var i = 0; i < ships.length; i++) {
+    var shipDiv = document.createElement("div");
+    shipDiv.setAttribute("class", "shipDiv");
+
+    var ship = document.createElement("input");
+    ship.setAttribute("type", "radio");
+    ship.onchange = updateShips;
+
+    
+    ship.setAttribute("name", "shipselection");
+    ship.setAttribute("id", i);
+    ship.setAttribute("value", ships[i]);
+
+    
+    if (i == 0) {
+      ship.setAttribute("checked", "checked");
+    }
+    
+    shipDiv.appendChild(ship);
+
+    var shipLabel = document.createElement("label");
+    shipLabel.setAttribute("for", i);
+    shipLabel.setAttribute("value", i + "label");
+    shipLabel.innerText = "Ship " + i;
+
+    shipDiv.appendChild(shipLabel);
+
+    
+    var tbl = document.createElement("table");
+    tbl.setAttribute("border", "1");
+    tbl.setAttribute("class", "shipToSelect");
+
+    var tr = document.createElement("tr");
+
+    for (var k = 0; k < ships[i]; k++) {
+      var td = document.createElement("td");
+      td.setAttribute("width", 10);
+      td.setAttribute("height", 10);
+      tr.appendChild(td);
+    }
+
+    tbl.appendChild(tr);
+
+    shipDiv.appendChild(tbl);
+    shipFrag.appendChild(shipDiv);
+
+    
+    if (ships.length == 10) {
+      document.getElementById("ships").appendChild(shipFrag);
+    } else {
+      
+      updatedShipsForm.appendChild(shipFrag);
+    }
+  }
+  if (ships.length == 10) {
+  } else {
+    document
+      .getElementById("ships")
+      .parentNode.replaceChild(
+        updatedShipsForm,
+        document.getElementById("ships")
+      );
+  }
+}
+
+function myFunc(val) {
+  return val * 2;
+}
+
+function setupGameBoard(documentFragmentToAttachTo) {
+  var tbl = document.createElement("table");
+  var tblBody = document.createElement("tbody");
+
+  tbl.style.width = "100%";
+  tbl.setAttribute("class", "gameBoardBasic");
+  tbl.setAttribute("border", "1");
+
+  for (var i = 0; i < selectedDim; i++) {
+    
+    var tr = document.createElement("tr");
+    for (var j = 0; j < selectedDim; j++) {
+      var cell = document.createElement("td");
+      cell.setAttribute("text", i + "," + j);
+      cell.setAttribute("id", i + "," + j);
+
+      
+      cell.innerHTML = "&nbsp;";
+      cell.onclick = placeShip;
+      cell.setAttribute("class", "buttonBasic");
+
+      
+      tr.appendChild(cell);
+    }
+
+    tblBody.appendChild(tr);
+    tbl.appendChild(tblBody);
+
+    documentFragmentToAttachTo.appendChild(tbl);
+  }
+
+  return documentFragmentToAttachTo;
+}
+
+function updateGameBoard(documentFragmentToAttachTo, newBoard) {
+  var tbl = document.createElement("table");
+  var tblBody = document.createElement("tbody");
+
+  tbl.style.width = "100%";
+  tbl.setAttribute("class", "gameBoardBasic");
+  tbl.setAttribute("border", "1");
+
+  for (var i = 0; i < selectedDim; i++) {
+    
+    var tr = document.createElement("tr");
+
+    for (var j = 0; j < selectedDim; j++) {
+      var cell = document.createElement("td");
+      cell.setAttribute("text", i + "," + j);
+      cell.setAttribute("id", i + "," + j);
+
+      
+      if (newBoard[i][j] == -1) {
+        cell.innerHTML = "&nbsp;";
+      } else {
+        cell.innerHTML = newBoard[i][j];
+      }
+
+      if (newBoard[i][j] != -1) {
+        cell.setAttribute("class", "buttonSelected");
+      } else {
+        cell.setAttribute("class", "buttonBasic");
+      }
+      cell.onclick = placeShip;
+
+      
+      tr.appendChild(cell);
+    }
+
+    tblBody.appendChild(tr);
+    tbl.appendChild(tblBody);
+
+    documentFragmentToAttachTo.appendChild(tbl);
+  }
+  return documentFragmentToAttachTo;
+}
+
+var placeShip = function() {
+  
+  var selected = this.id.split(",");
+  var row = selected[0];
+  var col = selected[1];
+
+  
+  var selectedGameBoardID = this.parentNode.parentNode.parentNode.parentNode.id;
+
+  
+  currentShipSize = ships[currentShipID];
+
+  
+  var gameBoardCurrentPlayer = selectedGameBoardID.slice(-2);
+
+  if (isPlacing == true) {
+    
+    if (gameBoardCurrentPlayer[1] == currentPlayer) {
+      var newBoardIds = window["gameBoard" + gameBoardCurrentPlayer + "Ids"];
+
+      var endCoord;
+      if (currentShipDirection == "horizontal") {
+        
+        endCoord = parseInt(col) + parseInt(currentShipSize);
+      } else {
+        
+        endCoord = parseInt(row) + parseInt(currentShipSize);
+      }
+
+      
+      if (endCoord <= selectedDim) {
+        
+        var isValid = true;
+
+        
+        if (currentShipDirection === "horizontal") {
+          for (var crd = col; crd < endCoord; crd++) {
+            if (newBoardIds[row][crd] != -1) {
+              isValid = false;
+            }
+          }
+        } else {
+          for (var rw = row; rw < endCoord; rw++) {
+            if (newBoardIds[rw][col] != -1) {
+              isValid = false;
+            }
+          }
+        }
+
+        
+        if (isValid) {
+          var startCoord;
+
+          if (currentShipDirection === "horizontal") {
+            startCoord = col;
+          } else {
+            startCoord = row;
+          }
+
+          for (var c = startCoord; c < endCoord; c++) {
+            
+            if (currentShipDirection === "horizontal") {
+              
+              newBoardIds[row][c] = currentIdOfShip;
+            } else {
+              
+              newBoardIds[c][col] = currentIdOfShip;
+            }
+          }
+
+          
+          
+          ships.splice(currentShipID, 1);
+
+          
+          renderCurrentShip();
+
+          
+          var gameBoardToPlaceOn = document.getElementById(
+            "container" + gameBoardCurrentPlayer
+          );
+
+          
+          currentIdOfShip++;
+
+          
+          if (ships.length == 0) {
+            
+            if (currentPlayer == 0) {
+              
+              currentPlayer = 1;
+              document.getElementById(
+                "currentPlayer"
+              ).innerHTML = currentPlayer;
+
+              
+              ships = initialShipsToPlace;
+              currentIdOfShip = 0;
+
+              cleanShips();
+              renderShips();
+              renderCurrentShip();
+
+              
+              var gameBoardDiv1 = document.getElementById("containerP1");
+              var gameBoardDiv0 = document.getElementById("containerP0");
+              gameBoardDiv1.style.display = "block";
+              gameBoardDiv0.style.display = "none";
+            } else {
+              currentPlayer = 0;
+              document.getElementById(
+                "currentPlayer"
+              ).innerHTML = currentPlayer;
+              alert("Time to shoot!");
+
+              
+              var gameBoardDiv0 = document.getElementById("containerP0");
+              var gameBoardDiv1 = document.getElementById("containerP1");
+              gameBoardDiv1.style.display = "none";
+              gameBoardDiv0.style.display = "block";
+
+              
+              var listOfCells0 =
+                gameBoardDiv0.childNodes[0].childNodes[0].childNodes;
+              var listOfCells1 =
+                gameBoardDiv1.childNodes[0].childNodes[0].childNodes;
+
+              for (var i = 0; i < listOfCells0.length; i++) {
+                var lenCols = listOfCells0[0].childNodes.length;
+                for (var j = 0; j < lenCols; j++) {
+                  var cell0 = listOfCells0[i].childNodes[j];
+
+                  
+                  if (cell0.tagName == "TD") {
+                    cell0.setAttribute("class", "buttonBasic");
+                    cell0.innerHTML = "&nbsp;";
+                    cell0.onclick = shootShip;
+                  }
+
+                  var cell1 = listOfCells1[i].childNodes[j];
+
+                  
+                  if (cell1.tagName == "TD") {
+                    cell1.setAttribute("class", "buttonBasic");
+                    cell1.innerHTML = "&nbsp;";
+                    cell1.onclick = shootShip;
+                  }
+                }
+              }
+
+              isPlacing = false;
+
+              
+              currentMode = "shooting";
+              document.getElementById("currentMode").innerHTML = currentMode;
+
+              document.getElementById("gameShips").style.display = "none";
+              document.getElementById("gameShipDirection").style.display =
+                "none";
+
+              
+              document.getElementById("gameNext").style.display = "block";
+            }
+          } else {
+            
+            var newGameBoardFrag = document.createDocumentFragment();
+            var newGameContainer = document.createElement("div");
+            newGameContainer.setAttribute(
+              "id",
+              "container" + gameBoardCurrentPlayer
+            );
+
+            newGameBoardFrag = updateGameBoard(newGameBoardFrag, newBoardIds);
+
+            newGameContainer.appendChild(newGameBoardFrag);
+
+            gameBoardToPlaceOn.parentNode.replaceChild(
+              newGameContainer,
+              gameBoardToPlaceOn
+            );
+
+            renderShips();
+          }
+        } else {
+          alert("Invalid placement of this type of ship, try again...");
+        }
+      } else {
+        alert("Invalid placement, out of bounds, try again...");
+      }
+    } else {
+      alert("Sorry, not your gameboard. Try with the other one..");
+    }
+  } else {
+    alert("Shooting phase...");
+    var shotsBoard = window["gameBoard" + gameBoardCurrentPlayer + "Shots"];
+    shotsBoard[row][col] = 1;
+
+    var gameBoardToPlaceOn = document.getElementById(
+      "container" + gameBoardCurrentPlayer
+    );
+    var newGameBoardFrag = document.createDocumentFragment();
+
+    var newGameContainer = document.createElement("div");
+    newGameContainer.setAttribute("id", "container" + gameBoardCurrentPlayer);
+
+    newGameBoardFrag = updateGameBoard(newGameBoardFrag, shotsBoard);
+
+    newGameContainer.appendChild(newGameBoardFrag);
+
+    gameBoardToPlaceOn.parentNode.replaceChild(
+      newGameContainer,
+      gameBoardToPlaceOn
+    );
+  }
+
+  
+  currentShipID = 0;
+  currentShipSize;
+};
+
+var shipDestroyed = function(idHit) {
+  cleanShips();
+  
+  document.getElementById("gameShipsDestroyedP" + currentPlayer).style.display =
+    "inline-flex";
+
+  var shipFrag = document.createDocumentFragment();
+  var shipDiv = document.createElement("div");
+  shipDiv.setAttribute("class", "shipDestroyedDiv");
+  shipDiv.setAttribute("id", "shipSelected");
+
+  var tbl = document.createElement("table");
+  tbl.setAttribute("border", "1");
+  tbl.setAttribute("class", "shipToSelect");
+
+  var noOfRows;
+  var noOfCols;
+
+  noOfRows = 1;
+  noOfCols = initShipsToPlace[idHit];
+
+  for (var row = 0; row < noOfRows; row++) {
+    var tr = document.createElement("tr");
+
+    for (var col = 0; col < noOfCols; col++) {
+      var td = document.createElement("td");
+      td.setAttribute("width", 10);
+      td.setAttribute("height", 10);
+      tr.appendChild(td);
+    }
+    tbl.append(tr);
+  }
+
+  shipDiv.appendChild(tbl);
+  shipFrag.appendChild(shipDiv);
+
+  document
+    .getElementById("shipsDestroyedP" + currentPlayer)
+    .appendChild(shipFrag);
+
+  var opponentPlayerID;
+  var currentPlayerID;
+
+  if (currentPlayer == 0) {
+    opponentPlayerID = "P1";
+    currentPlayerID = "P0";
+  } else {
+    opponentPlayerID = "P0";
+    currentPlayerID = "P1";
+  }
+
+  var shipPartsLeft = window["shipsShot" + opponentPlayerID];
+
+  var hasLost = true;
+
+  for (var i = 0; i < shipPartsLeft.length; i++) {
+    if (shipPartsLeft[i] != 0) {
+      hasLost = false;
+    }
+  }
+
+  var boardView = document.getElementById("container" + currentPlayerID);
+  var listOfCells = boardView.childNodes[0].childNodes[0].childNodes;
+
+  var newBoardIds = window["gameBoard" + opponentPlayerID + "Ids"];
+
+  for (var i = 0; i < listOfCells.length; i++) {
+    var lenCols = listOfCells[0].childNodes.length;
+
+    for (var j = 0; j < lenCols; j++) {
+      var cell = listOfCells[i].childNodes[j];
+
+      
+      var currId = newBoardIds[i][j];
+      if (currId == idHit) {
+        cell.innerHTML = idHit;
+      }
+    }
+  }
+
+  if (hasLost) {
+    
+    document.getElementById("gameOver").style.display = "block";
+
+    var winnerFrag = document.createDocumentFragment();
+
+    var winner = document.createElement("h2");
+
+    var t = document.createTextNode("WINNER IS:" + currentPlayerID);
+
+    winner.appendChild(t);
+
+    winnerFrag.appendChild(winner);
+
+    
+    document.getElementById("gameOverWinningPlayer").appendChild(winnerFrag);
+  }
+};
+
+var shootShip = function() {
+  var selected = this.id.split(",");
+  var row = selected[0];
+  var col = selected[1];
+  var selectedGameBoardID = this.parentNode.parentNode.parentNode.parentNode.id;
+
+  
+  currentShipSize = ships[currentShipID];
+
+  
+  var gameBoardCurrentPlayer = selectedGameBoardID.slice(-2);
+  var gameBoardCurrentOpponent;
+  if (gameBoardCurrentPlayer == "P0") {
+    gameBoardCurrentOpponent = "P1";
+  } else {
+    gameBoardCurrentOpponent = "P0";
+  }
+  document.getElementById("currentPlayer").innerHTML = currentPlayer;
+
+  
+  var actualBoard = window["gameBoard" + gameBoardCurrentOpponent + "Ids"];
+
+  var newBoardIds = window["gameBoard" + gameBoardCurrentOpponent + "Ids"];
+
+  var idHit = newBoardIds[row][col];
+
+  
+  var shipsShotToReduce = window["shipsShot" + gameBoardCurrentOpponent];
+
+  var leftPartsOfShip = shipsShotToReduce[idHit] - 1;
+  shipsShotToReduce[idHit] = leftPartsOfShip;
+
+  if (leftPartsOfShip == 0) {
+    
+    shipDestroyed(idHit);
+  }
+
+  
+
+  
+  var shotsBoard = window["gameBoard" + gameBoardCurrentPlayer + "Shots"];
+  shotsBoard[row][col] = 1;
+
+  var boardView = document.getElementById("container" + gameBoardCurrentPlayer);
+  var listOfCells0 = boardView.childNodes[0].childNodes[0].childNodes;
+
+  if (actualBoard[row][col] != -1) {
+    for (var i = 0; i < listOfCells0.length; i++) {
+      var idToShoot = row + "," + col;
+      var lenCols = listOfCells0[0].childNodes.length;
+
+      for (var j = 0; j < lenCols; j++) {
+        var cell0 = listOfCells0[i].childNodes[j];
+
+        if (cell0.id == idToShoot) {
+          cell0.setAttribute("class", "buttonHit");
+        }
+      }
+    }
+  } else {
+    var idToShoot = row + "," + col;
+    for (var i = 0; i < listOfCells0.length; i++) {
+      var lenCols = listOfCells0[0].childNodes.length;
+
+      for (var j = 0; j < lenCols; j++) {
+        var cell0 = listOfCells0[i].childNodes[j];
+
+        if (cell0.id == idToShoot) {
+          cell0.setAttribute("class", "buttonMiss");
+        }
+      }
+    }
+  }
+};
+
+function nextShooter() {
+  
+  currentRound++;
+  document.getElementById("currentRound").innerHTML = currentRound;
+  document.getElementById("currentRoundWrapper").style.display = "inline-flex";
+
+  
+  var currentOpponent;
+  if (currentPlayer == 0) {
+    currentOpponent = 1;
+  } else {
+    currentOpponent = 0;
+  }
+
+  
+  document.getElementById("containerP" + currentPlayer).style.display = "none";
+  document.getElementById("containerP" + currentOpponent).style.display =
+    "block";
+  document.getElementById("gameShipsDestroyedP" + currentPlayer).style.display =
+    "none";
+  document.getElementById(
+    "gameShipsDestroyedP" + currentOpponent
+  ).style.display = "inline-flex";
+
+  
+  if (currentPlayer == 0) {
+    currentPlayer = 1;
+  } else {
+    currentPlayer = 0;
+  }
+
+  document.getElementById("currentPlayer").innerHTML = currentPlayer;
+}
+
+var renderSizeSelection = function() {
+  
+  for (var i = minDim; i <= maxDim; i++) {
+    var button = document.createElement("button");
+    button.setAttribute("id", i);
+    button.innerHTML = i;
+    button.onclick = selectSize;
+    button.setAttribute("class", "sizeSelectionButton");
+    sizeFrag.appendChild(button);
+  }
+
+  
+  document.getElementById("sizeSelectionContainer").appendChild(sizeFrag);
+};
+
+var onStartup = function() {
+  
+  renderSizeSelection();
+
+  
+  var docFrag = document.createDocumentFragment();
+  docFrag = setupGameBoard(docFrag);
+
+  
+  document.getElementById("containerP0").appendChild(docFrag);
+  document.getElementById("containerP1").appendChild(docFrag);
+
+  
+  renderShips();
+  renderCurrentShip();
+};
+
+onStartup();
